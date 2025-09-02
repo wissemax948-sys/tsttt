@@ -2,3 +2,4 @@ Flask
 fastapi
 requests
 uvicorn
+cloudscraper
