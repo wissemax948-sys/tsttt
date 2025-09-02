@@ -1,12 +1,17 @@
 from flask import Flask, request, Response, jsonify
 import requests
+import os
 
 app = Flask(__name__)
 
-# ⚠️ Clé IntelX privée
+# ⚠️ Clé IntelX privée (ne jamais exposer côté client)
 API_URL = "https://osintsolutions.org/api/intelx_advanced"
 API_KEY = "TZ1JuGJ-kwQ-CwZ7Y7v1k-CVf6mWJ6UJ"
 FORCE_DOWNLOAD = False
+
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({"message": "API IntelX Flask opérationnelle. Utilisez /fetch"}), 200
 
 @app.route('/fetch', methods=['GET'])
 def fetch_data():
@@ -18,7 +23,7 @@ def fetch_data():
         return jsonify({"error": "Missing required parameters"}), 400
 
     params = {
-        "apikey": API_KEY,  # ⚠️ reste côté serveur, jamais exposé
+        "apikey": API_KEY,  # ⚠️ reste côté serveur
         "storageid": storage_id,
         "bucket": bucket,
         "download": str(FORCE_DOWNLOAD).lower()
@@ -31,8 +36,11 @@ def fetch_data():
         content_type = response.headers.get("Content-Type", "")
 
         if 'application/json' in content_type:
-            # Erreur renvoyée par IntelX
-            return jsonify({"error": "IntelX API returned an error"}), 500
+            # IntelX renvoie une erreur JSON
+            return jsonify({
+                "error": "IntelX API returned an error",
+                "response": response.json()
+            }), 500
 
         # Renvoi direct du flux au client
         return Response(
@@ -40,14 +48,22 @@ def fetch_data():
             content_type='application/octet-stream'
         )
 
-    except requests.exceptions.HTTPError:
-        return jsonify({"error": "HTTP Error occurred"}), 500
+    except requests.exceptions.HTTPError as errh:
+        return jsonify({
+            "error": "HTTP Error occurred",
+            "status_code": errh.response.status_code,
+            "response_text": errh.response.text
+        }), 500
     except requests.exceptions.ConnectionError:
-        return jsonify({"error": "Connection Error"}), 500
+        return jsonify({"error": "Connection Error — vérifie internet ou API IntelX"}), 500
     except requests.exceptions.Timeout:
-        return jsonify({"error": "Request Timeout"}), 500
-    except requests.exceptions.RequestException:
-        return jsonify({"error": "Request Failed"}), 500
+        return jsonify({"error": "Request Timeout — serveur IntelX trop long"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": "Request Failed", "details": str(e)}), 500
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    # Serveur WSGI robuste pour production avec Waitress
+    from waitress import serve
+    port = int(os.environ.get("PORT", 5000))
+    serve(app, host="0.0.0.0", port=port)
