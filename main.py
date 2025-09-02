@@ -10,7 +10,7 @@ app = FastAPI()
 API_URL = "https://osintsolutions.org/api/intelx_advanced"
 API_KEY = "TZ1JuGJ-kwQ-CwZ7Y7v1k-CVf6mWJ6UJ"  # clé OSINT cachée
 
-# 🚪 Ta propre clé API (que toi tu donnes aux utilisateurs de ton API)
+# 🚪 Clé API de ton proxy (fournie aux utilisateurs)
 MY_API_KEY = "Q9wYH0N0rLh8eKJ4tWZ7d3Xgq2Oa5pRf8Ty1VuLm9SjCxBkDnMhEzGiKoPtUrXy"
 
 # 📂 Dossier où stocker les résultats
@@ -29,7 +29,7 @@ def fetch_data(
         raise HTTPException(status_code=403, detail="Invalid API key")
 
     params = {
-        "apikey": API_KEY,   # ta clé OSINT cachée
+        "apikey": API_KEY,   # clé OSINT cachée
         "storageid": storageid,
         "bucket": bucket,
         "download": str(download).lower()
