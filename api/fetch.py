@@ -1,25 +1,16 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, Response, jsonify
 import requests
-import uuid
-import os
 
 app = Flask(__name__)
 
-# ⚠️ Clé OSINT privée
+# ⚠️ Clé IntelX privée
 API_URL = "https://osintsolutions.org/api/intelx_advanced"
 API_KEY = "TZ1JuGJ-kwQ-CwZ7Y7v1k-CVf6mWJ6UJ"
 FORCE_DOWNLOAD = False
 
-# Clé API pour ton propre service Flask
-MY_API_KEY = "TEST"  # ⚠️ À changer et garder secrète 
-
 @app.route('/fetch', methods=['GET'])
 def fetch_data():
-    # Vérification de la clé API pour sécuriser l'accès
-    client_key = request.headers.get('X-API-KEY')
-    if client_key != MY_API_KEY:
-        return jsonify({"error": "Unauthorized — invalid API key"}), 401
-
+    # Récupération des paramètres depuis la requête
     storage_id = request.args.get('storageid')
     bucket = request.args.get('bucket')
 
@@ -27,30 +18,27 @@ def fetch_data():
         return jsonify({"error": "Missing required parameters"}), 400
 
     params = {
-        "apikey": API_KEY,
+        "apikey": API_KEY,  # ⚠️ reste côté serveur, jamais exposé
         "storageid": storage_id,
         "bucket": bucket,
         "download": str(FORCE_DOWNLOAD).lower()
     }
 
-    unique_id = uuid.uuid4().hex[:8]
-    filename = f"{storage_id[:10]}_{bucket}_{unique_id}.txt"
-
     try:
+        # Appel à IntelX
         response = requests.get(API_URL, params=params, stream=True, timeout=20)
         response.raise_for_status()
-
         content_type = response.headers.get("Content-Type", "")
 
         if 'application/json' in content_type:
-            return jsonify({"error": "API returned an error"}), 500
-        else:
-            with open(filename, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
+            # Erreur renvoyée par IntelX
+            return jsonify({"error": "IntelX API returned an error"}), 500
 
-            return send_file(filename, as_attachment=True)
+        # Renvoi direct du flux au client
+        return Response(
+            response.iter_content(chunk_size=8192),
+            content_type='application/octet-stream'
+        )
 
     except requests.exceptions.HTTPError:
         return jsonify({"error": "HTTP Error occurred"}), 500
@@ -60,9 +48,6 @@ def fetch_data():
         return jsonify({"error": "Request Timeout"}), 500
     except requests.exceptions.RequestException:
         return jsonify({"error": "Request Failed"}), 500
-    finally:
-        if os.path.exists(filename):
-            os.remove(filename)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=5000)
