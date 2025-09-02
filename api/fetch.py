@@ -8,7 +8,7 @@ app = FastAPI()
 
 # 🔑 Clés directement dans le code
 API_URL = "https://osintsolutions.org/api/intelx_advanced"
-API_KEY = "TZ1JuGJ-kwQ-CwZ7Y7v1k-CwZ7Y7v1k-CVf6mWJ6UJ"  # clé IntelX
+API_KEY = "TZ1JuGJ-kwQ-CwZ7Y7v1k-CVf6mWJ6UJ"  # clé IntelX
 MY_API_KEY = "test"  # clé utilisateur interne
 
 # 📂 Dossier pour résultats temporaires
