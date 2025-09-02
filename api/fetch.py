@@ -1,7 +1,7 @@
 import requests
 import uuid
 import os
-from vercel_python_runtime import VercelResponse  # Vercel serverless helper
+from vercel_python_runtime import VercelResponse  # helper Vercel serverless
 
 API_URL = "https://osintsolutions.org/api/intelx_advanced"
 API_KEY = "TZ1JuGJ-kwQ-CwZ7Y7v1k-CVf6mWJ6UJ"
@@ -10,7 +10,6 @@ RESULTS_DIR = "/tmp/results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 def handler(request):
-    # Récupération des paramètres
     user_key = request.args.get("user_key")
     storageid = request.args.get("storageid")
     bucket = request.args.get("bucket", "leaks.logs")
@@ -39,12 +38,14 @@ def handler(request):
                 if chunk:
                     f.write(chunk)
 
-        # Retourner le contenu brut
         with open(filepath, "rb") as f:
-            return VercelResponse(f.read(), headers={
-                "Content-Disposition": f"attachment; filename={filename}",
-                "Content-Type": "text/plain"
-            })
+            return VercelResponse(
+                f.read(),
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}",
+                    "Content-Type": "text/plain"
+                }
+            )
 
     except requests.exceptions.RequestException as e:
         return VercelResponse({"error": str(e)}, status=500)
